@@ -127,25 +127,19 @@ if __name__ == "__main__":
     print("Processing multiple data types through same interface...")
     data_types: List = [[2, 2, 2], "Example text", "INFO: System ready"]
     processors: List[DataProcessor] = [num_proc, text_proc, log_proc]
-    for ind in range(0, len(processors)):
+    for data_type in data_types:
         try:
-            print(f"Result {ind + 1}: "
-                  f"{processors[ind].process(data_types[ind])}")
-        except ValueError as e:
-            print(e)
-    # for data_type in data_types:
-    #     try:
-    #         print(f"Result 1: {processors[0].process(data_type)}")
-    #     except ValueError:
-    #         continue
-    # for data_type in data_types:
-    #     try:
-    #         print(f"Result 2: {processors[1].process(data_type)}")
-    #     except ValueError:
-    #         continue
-    # for data_type in data_types:
-    #     try:
-    #         print(f"Result 3: {processors[2].process(data_type)}")
-    #     except ValueError:
-    #         continue
+            print(f"Result 1: {processors[0].process(data_type)}")
+        except ValueError:
+            continue
+    for data_type in data_types:
+        try:
+            print(f"Result 2: {processors[1].process(data_type)}")
+        except ValueError:
+            continue
+    for data_type in data_types:
+        try:
+            print(f"Result 3: {processors[2].process(data_type)}")
+        except ValueError:
+            continue
     print("\nFoundation systems online. Nexus ready for advanced streams.")
