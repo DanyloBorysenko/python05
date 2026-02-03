@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 
 class DataStream(ABC):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.data_type: str = "Generic"
         self.last_batch: List[Any] = []
@@ -31,39 +31,70 @@ class DataStream(ABC):
 
 
 class SensorStream(DataStream):
-    def __init__(self, stream_id: str):
+    def __init__(self, stream_id: str) -> None:
         print("Initializing Sensor Stream...")
         super().__init__()
         self.stream_id = stream_id
         self.data_type = "Environmental Data"
 
     def process_batch(self, data_batch: List[Any]) -> str:
+        sensor_names: List[str] = ["temp", "humidity", "pressure"]
+        for el in data_batch:
+            if isinstance(el, str) is False:
+                return f"Unknown sensor data received: '{el}'"
+            if ":" not in el:
+                return f"Sensor data does not contain ':': '{el}'"
+            name_value: List[str] = el.split(":")
+            if len(name_value) != 2:
+                return f"Sensor data is not completed '{el}'"
+            if name_value[0] not in sensor_names:
+                return f"Not existed sensor name '{el}'"
+            if name_value[1] == "":
+                return f"Value is empty: '{el}'"
         self.last_batch = data_batch
         return f"Processing sensor batch: [{', '.join(data_batch)}]"
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
         stream_data: Dict[str, Union[str, int, float]] = super().get_stats()
+        avg_temp: float
         try:
             temperatures: List[str] = [float(el.split(":")[1])
                                        for el in self.last_batch
                                        if ':' in el and
                                        el.split(":")[0] == "temp"]
-            avg_temp: float = (sum(temperatures) / len(temperatures))
-            stream_data.update({"avg_temp": avg_temp})
-        except (TypeError, ValueError, ZeroDivisionError) as e:
+            if len(temperatures) == 0:
+                avg_temp = 0
+            else:
+                avg_temp = (sum(temperatures) / len(temperatures))
+        except (TypeError, ValueError) as e:
             print("Sensor stream failed to calculate avg temp")
             print(e)
+        else:
+            stream_data.update({"avg_temp": avg_temp})
         return stream_data
 
 
 class TransactionStream(DataStream):
-    def __init__(self, stream_id: str):
+    def __init__(self, stream_id: str) -> None:
         print("Initializing Transaction Stream...")
         super().__init__()
         self.stream_id = stream_id
         self.data_type = "Financial Data"
 
     def process_batch(self, data_batch: List[Any]) -> str:
+        operation_names: List[str] = ["buy", "sell"]
+        for el in data_batch:
+            if isinstance(el, str) is False:
+                return f"Unknown operation data received: '{el}'"
+            if ":" not in el:
+                return f"Operation data does not contain ':': '{el}'"
+            name_value: List[str] = el.split(":")
+            if len(name_value) != 2:
+                return f"Operation data is not completed '{el}'"
+            if name_value[0] not in operation_names:
+                return f"Not existed operation '{el}'"
+            if name_value[1] == "":
+                return f"Value is empty: '{el}'"
         self.last_batch = data_batch
         return f"Processing transaction batch: [{', '.join(data_batch)}]"
 
@@ -87,13 +118,16 @@ class TransactionStream(DataStream):
 
 
 class EventStream(DataStream):
-    def __init__(self, stream_id: str):
+    def __init__(self, stream_id: str) -> None:
         print("Initializing Event Stream...")
         super().__init__()
         self.stream_id = stream_id
         self.data_type = "System Events"
 
     def process_batch(self, data_batch: List[Any]) -> str:
+        for el in data_batch:
+            if isinstance(el, str) is False:
+                return f"Unknown event data received: '{el}'"
         self.last_batch = data_batch
         return f"Processing event batch: [{', '.join(data_batch)}]"
 
@@ -108,7 +142,7 @@ class EventStream(DataStream):
 
 
 class StreamProcessor():
-    def __init__(self):
+    def __init__(self) -> None:
         self.batch_number = 1
 
     def batch_processing(self,
@@ -129,7 +163,8 @@ class StreamProcessor():
             if isinstance(stream, SensorStream):
                 temperatures: List[str] = stream.filter_data(stream.last_batch,
                                                              "temp")
-                high_temp = [temp for temp in temperatures if float(temp.split(":")[1]) > 30]
+                high_temp = [temp for temp in temperatures
+                             if float(temp.split(":")[1]) > 30]
         return len(high_temp)
 
 
@@ -156,10 +191,11 @@ if __name__ == "__main__":
 
     stream_id = "TRANS_001"
     type = "Financial Data"
+    transaction_input: List[Any] = ["buy:100",
+                                    "sell:150", "buy:75"]
     print(f"Stream ID: {stream_id}, Type: {type}")
     transaction_stream: DataStream = TransactionStream(stream_id)
-    batch_res = transaction_stream.process_batch(["buy:100",
-                                                  "sell:150", "buy:75"])
+    batch_res = transaction_stream.process_batch(transaction_input)
     print(batch_res)
     analysis = transaction_stream.get_stats()
     print(f"Transaction analysis: {analysis["el_count"]} operations, "
@@ -168,9 +204,10 @@ if __name__ == "__main__":
 
     stream_id = "EVENT_001"
     type = "System Events"
+    event_input: List[Any] = ["login", "error", "logout"]
     print(f"Stream ID: {stream_id}, Type: {type}")
     event_stream: DataStream = EventStream(stream_id)
-    batch_res = event_stream.process_batch(["login", "error", "logout"])
+    batch_res = event_stream.process_batch(event_input)
     print(batch_res)
     analysis = event_stream.get_stats()
     print(f"Event analysis: {analysis["el_count"]} events, "
