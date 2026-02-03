@@ -8,11 +8,24 @@ class ProcessingStage(Protocol):
 
 
 class InputStage:
-    def process(self, data: Any) -> Dict:
-        pass
+    def process(self, data: Any) -> Dict[str, Any]:
+        res: Dict[str, int] = {}
+        if isinstance(data, str) and data.startswith("{"):
+            res = {key_value[0]: key_value[1] for reading in data.split(",") for key_value in reading.split(":")}
+            return res
+        if isinstance(data, str) and "," in data:
+            for item in data.split(","):
+                if item in res:
+                    res[item] += 1
+                else:
+                    res.update({item: 0})
+            return res
+        if data is List[int]:
+            pass
+            
 
 
-class TransformStage():
+class TransformStage:
     def process(self, data: Any) -> Dict:
         pass
 
@@ -65,9 +78,30 @@ class StreamAdapter(ProcessingPipeline):
 class NexusManager:
     def __init__(self) -> None:
         self.pipelines: List[ProcessingPipeline] = []
+        print("Initializing Nexus Manager...")
 
     def add_pipeline(self, pipeline: ProcessingPipeline) -> None:
         self.pipelines.append(pipeline)
 
     def process_data(self, data: Any) -> None:
         pass
+
+
+if __name__ == "__main__":
+    print("=== CODE NEXUS - ENTERPRISE PIPELINE SYSTEM ===")
+    print()
+
+    nex_manager = NexusManager()
+
+    print("Creating Data Processing Pipeline...")
+
+    print("Stage 1: Input validation and parsing")
+    input_stage: InputStage = InputStage()
+
+    print("Stage 2: Data transformation and enrichment")
+    transform_stage: TransformStage = TransformStage()
+
+    print("Stage 3: Output formatting and delivery")
+    output_stage: OutputStage = OutputStage()
+
+
