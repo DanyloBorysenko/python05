@@ -24,8 +24,10 @@ class NumericProcessor(DataProcessor):
         if self.validate(data) is True:
             total_sum = sum(data)
             total_len = len(data)
-            return (f"Processed {total_len} numeric values, sum={total_sum}, "
-                    f"avg={(total_sum / total_len):.1f}")
+            if total_len != 0:
+                return (f"Processed {total_len} numeric values, "
+                        f"sum={total_sum}, "
+                        f"avg={(total_sum / total_len):.1f}")
         raise ValueError("Not correct data for NumericProcessor")
 
     def validate(self, data: Any) -> bool:
@@ -101,7 +103,10 @@ if __name__ == "__main__":
     print(f"Processing data: {data}")
     if num_proc.validate(data) is True:
         print("Validation: Numeric data verified")
-    print(f"{num_proc.format_output(num_proc.process(data))}")
+        try:
+            print(f"{num_proc.format_output(num_proc.process(data))}")
+        except ValueError as e:
+            print(e)
 
     print()
 
@@ -110,7 +115,10 @@ if __name__ == "__main__":
     print(f"Processing data: \"{data}\"")
     if text_proc.validate(data) is True:
         print("Validation: Text data verified")
-    print(f"{text_proc.format_output(text_proc.process(data))}")
+    try:
+        print(f"{text_proc.format_output(text_proc.process(data))}")
+    except ValueError as e:
+        print(e)
 
     print()
 
@@ -119,7 +127,10 @@ if __name__ == "__main__":
     print(f"Processing data: \"{data}\"")
     if log_proc.validate(data) is True:
         print("Validation: Log entry verified")
-    print(f"{log_proc.format_output(log_proc.process(data))}")
+    try:
+        print(f"{log_proc.format_output(log_proc.process(data))}")
+    except ValueError as e:
+        print(e)
 
     print()
 
