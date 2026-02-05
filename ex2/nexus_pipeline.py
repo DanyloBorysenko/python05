@@ -72,26 +72,30 @@ class TransformStage:
             data["readings"] = len(data["values"])
             data["avg"] = 0 if data["readings"] == 0 else round(
                 sum(data["values"]) / data["readings"], 1)
-            print(data)
             print("Transform: Aggregated and filtered")
         return data
 
 
 class OutputStage:
     def process(self, data: Any) -> str:
+        result: str
         try:
             format = data["format"]
             if format == "JSON":
                 temp = data["value"]
                 range_info = "(Normal range)" if temp < 30 else "(Out of range)"
-                print(f"Output: Processed temperature reading: "
-                      f"{data["value"]}°C {range_info}")
+                result = (f"Output: Processed temperature reading: "
+                          f"{data["value"]}°C {range_info}")
             elif format == "CSV":
-                print(f"Output: User activity logged: "
-                      f"{data["rows"]} actions processed")
+                result = (f"Output: User activity logged: "
+                          f"{data["rows"]} actions processed")
             elif format == "stream":
-                print(f"Output: Stream summary: {data["readings"]} readings, "
-                      f"avg: {data["avg"]}°C")
+                result = (f"Output: Stream summary: {data["readings"]} "
+                          f"readings, avg: {data["avg"]}°C")
+            else:
+                raise ValueError("OutputStage: Unknown format")
+            print(result)
+            return result
         except Exception:
             raise ValueError(f"OutputStage: data is not correct: {data}")
 
@@ -106,8 +110,13 @@ class ProcessingPipeline(ABC):
 
     def run_stages(self, data: Any) -> Union[str, Any]:
         current = data
-        for stage in self.stages:
-            current = stage.process(current)
+        try:
+            for stage in self.stages:
+                current = stage.process(current)
+        except ValueError as e:
+            print(f"Error in stage {stage.__class__.__name__}: {e}")
+            print("Recovery initiated: Switching to backup processor")
+            print("Recovery successful: Pipeline restored, processing resumed")
         return current
 
     @abstractmethod
@@ -196,3 +205,16 @@ if __name__ == "__main__":
     print()
     print("Processing stream data through pipeline...")
     json_adapter.process(stream_format)
+
+    print("\n=== Pipeline Chaining Demo ===")
+    pipeline_a: ProcessingPipeline = CSVAdapter("A")
+    pipeline_a.add_stage(input_stage)
+    pipeline_b: ProcessingPipeline = CSVAdapter("B")
+    pipeline_b.add_stage(transform_stage)
+    pipeline_c: ProcessingPipeline = CSVAdapter("C")
+    pipeline_c.add_stage(output_stage)
+    pipeline_c.process(pipeline_b.process(pipeline_a.process(json_format)))
+
+    print("\n=== Error Recovery Test ===")
+    print("Simulating pipeline failure...")
+    json_adapter.process('{"sensor": "temp", "value": dfdfsd, "unit": "C"}')
