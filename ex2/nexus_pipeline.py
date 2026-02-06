@@ -10,7 +10,7 @@ class ProcessingStage(Protocol):
 
 class InputStage:
     def process(self, data: Any) -> Dict[str, Any]:
-        print(f"Input: {data}")
+        print(f"Input: '{data}'")
         res: Dict[str, Any] = {}
         if isinstance(data, str) and data.startswith("{"):
             data = data.strip("{}")
@@ -173,11 +173,11 @@ class NexusManager:
     def add_pipeline(self, pipeline: ProcessingPipeline) -> None:
         self.pipelines.append(pipeline)
 
-    def process_data(self, data: Any) -> None:
+    def process_data(self, data: Any) -> Any:
         current = data
         for pipeline in self.pipelines:
-            print(f"Processing through {pipeline.__class__.__name__}")
             current = pipeline.process(current)
+        return current
 
 
 if __name__ == "__main__":
@@ -220,18 +220,21 @@ if __name__ == "__main__":
     print("\n=== Pipeline Chaining Demo ===")
     pipeline_a: ProcessingPipeline = CSVAdapter("A")
     pipeline_a.add_stage(input_stage)
-    pipeline_b: ProcessingPipeline = CSVAdapter("B")
+    pipeline_b: ProcessingPipeline = JSONAdapter("B")
     pipeline_b.add_stage(transform_stage)
-    pipeline_c: ProcessingPipeline = CSVAdapter("C")
+    pipeline_c: ProcessingPipeline = StreamAdapter("C")
     pipeline_c.add_stage(output_stage)
-    pipeline_c.process(pipeline_b.process(pipeline_a.process(json_format)))
+    nex_manager.add_pipeline(pipeline_a)
+    nex_manager.add_pipeline(pipeline_b)
+    nex_manager.add_pipeline(pipeline_c)
+    nex_manager.process_data(json_format)
+    print()
 
-    print("Chain result: 100 records processed through 3-stage pipeline")
+    print("Chain result: 100 records processed through 3-stage pipeline\n")
     for i in range(0, 100):
         json_adapter.process([json_format, csv_format, stream_format][i % 3])
-    print(f"Performance: {json_adapter.total_time:.4f}s total processing time")
-    print(f"{json_adapter.processed_count}")
+    print(f"\nPerformance: {json_adapter.total_time:.4f}s total processing time")
 
     print("\n=== Error Recovery Test ===")
     print("Simulating pipeline failure...")
-    json_adapter.process('{"sensor": "temp", "value": dfdfsd, "unit": "C"}')
+    json_adapter.process('{"sensor": "temp", "value": "dfdfsd", "unit": "C"}')

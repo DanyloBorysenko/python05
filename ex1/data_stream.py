@@ -38,7 +38,7 @@ class SensorStream(DataStream):
         self.data_type = "Environmental Data"
 
     def process_batch(self, data_batch: List[Any]) -> str:
-        sensor_names: List[str] = ["temp", "humidity", "pressure"]
+        sensor_names: List[float] = ["temp", "humidity", "pressure"]
         for el in data_batch:
             if isinstance(el, str) is False:
                 return f"Unknown sensor data received: '{el}'"
