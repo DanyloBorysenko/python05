@@ -1,5 +1,6 @@
 from typing import List, Dict, Union, Any, Protocol
 from abc import ABC, abstractmethod
+import time
 
 
 class ProcessingStage(Protocol):
@@ -27,7 +28,8 @@ class InputStage:
             res["format"] = "JSON"
             return res
         elif isinstance(data, str) and "," in data:
-            lines = [line.strip() for line in data.splitlines() if line.strip()]
+            lines = [line.strip() for line in data.splitlines()
+                     if line.strip()]
             if len(lines) == 0:
                 raise ValueError("Input stage: Empty csv data")
             header = lines[0].split(",")
@@ -83,7 +85,9 @@ class OutputStage:
             format = data["format"]
             if format == "JSON":
                 temp = data["value"]
-                range_info = "(Normal range)" if temp < 30 else "(Out of range)"
+                range_info = ("(Normal range)"
+                              if temp < 30
+                              else "(Out of range)")
                 result = (f"Output: Processed temperature reading: "
                           f"{data["value"]}°C {range_info}")
             elif format == "CSV":
@@ -104,19 +108,26 @@ class ProcessingPipeline(ABC):
     def __init__(self) -> None:
         super().__init__()
         self.stages: List[ProcessingStage] = []
+        self.processed_count: int = 0
+        self.total_time: float = 0.0
 
     def add_stage(self, stage: ProcessingStage) -> None:
         self.stages.append(stage)
 
     def run_stages(self, data: Any) -> Union[str, Any]:
         current = data
+        start = time.perf_counter()
         try:
             for stage in self.stages:
                 current = stage.process(current)
+            self.processed_count += 1
         except ValueError as e:
             print(f"Error in stage {stage.__class__.__name__}: {e}")
             print("Recovery initiated: Switching to backup processor")
             print("Recovery successful: Pipeline restored, processing resumed")
+        finally:
+            elapsed = time.perf_counter() - start
+            self.total_time += elapsed
         return current
 
     @abstractmethod
@@ -214,6 +225,12 @@ if __name__ == "__main__":
     pipeline_c: ProcessingPipeline = CSVAdapter("C")
     pipeline_c.add_stage(output_stage)
     pipeline_c.process(pipeline_b.process(pipeline_a.process(json_format)))
+
+    print("Chain result: 100 records processed through 3-stage pipeline")
+    for i in range(0, 100):
+        json_adapter.process([json_format, csv_format, stream_format][i % 3])
+    print(f"Performance: {json_adapter.total_time:.4f}s total processing time")
+    print(f"{json_adapter.processed_count}")
 
     print("\n=== Error Recovery Test ===")
     print("Simulating pipeline failure...")
