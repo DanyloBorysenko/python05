@@ -233,7 +233,8 @@ if __name__ == "__main__":
     print("Chain result: 100 records processed through 3-stage pipeline\n")
     for i in range(0, 100):
         json_adapter.process([json_format, csv_format, stream_format][i % 3])
-    print(f"\nPerformance: {json_adapter.total_time:.4f}s total processing time")
+    print(f"\nPerformance: {json_adapter.total_time:.4f}s "
+          f"total processing time")
 
     print("\n=== Error Recovery Test ===")
     print("Simulating pipeline failure...")
